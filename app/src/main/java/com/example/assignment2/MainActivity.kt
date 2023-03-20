@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
     private val PICK_PDF_REQUEST = 1
     private var pdfUri: Uri? = null
-
+    lateinit var progressDialog: ProgressDialog
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -29,9 +29,43 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "application/pdf"
         startActivityForResult(intent, PICK_PDF_REQUEST)
+        uploadFile()
     }
 
-    uploadFile()
+
+
+        binding.downloadFileButton.setOnClickListener {
+            val folder = File(applicationContext.filesDir, "Ass2")
+            if (!folder.exists()) {
+                folder.mkdirs()
+            }
+            progressDialog = ProgressDialog(this)
+            progressDialog.setTitle("Downloading...")
+            showProgressDialog()
+
+
+            val storageRef = Firebase.storage.reference
+                .child("PDF")
+            storageRef.listAll().addOnSuccessListener { listResult ->
+                listResult.items.forEach { item ->
+                    val file = File(folder, item.name)
+                    item.getFile(file).addOnSuccessListener {
+                        // File downloaded successfully
+                        hideProfressDialog()
+                        Toast.makeText(applicationContext, "Download and save Success", Toast.LENGTH_SHORT).show()
+
+                    }.addOnFailureListener { exception ->
+                        // Handle download failure
+                        hideProfressDialog()
+                        Toast.makeText(applicationContext, "Save fail", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.addOnFailureListener { exception ->
+                // Handle listAll() failure
+                hideProfressDialog()
+                Toast.makeText(applicationContext, "Download fail", Toast.LENGTH_SHORT).show()
+            }
+        }
 //    downloadFile("")
 
     }
@@ -87,7 +121,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun showProgressDialog() {
+        progressDialog.show()
+    }
 
+    fun hideProfressDialog() {
+        progressDialog.dismiss()
+    }
 
 
 
